@@ -1,0 +1,5 @@
+{
+  "name": "Smart Calendar To-Do",
+  "description": "A modern calendar-based to-do list application where you can manage tasks for specific dates with O/X completion status and AI-powered suggestions.",
+  "requestFramePermissions": []
+}
