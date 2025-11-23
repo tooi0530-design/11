@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Task } from '../types';
-import { Plus, Trash2, Check, X, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Sparkles, Loader2, Lock } from 'lucide-react';
 import { generateTaskSuggestions } from '../services/geminiService';
 
 interface TaskListProps {
@@ -11,6 +11,8 @@ interface TaskListProps {
   onToggleTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
   onAddMultipleTasks: (newTasks: Task[]) => void;
+  apiKey: string;
+  onOpenSettings: () => void;
 }
 
 export const TaskList: React.FC<TaskListProps> = ({ 
@@ -19,7 +21,9 @@ export const TaskList: React.FC<TaskListProps> = ({
   onAddTask, 
   onToggleTask, 
   onDeleteTask,
-  onAddMultipleTasks
+  onAddMultipleTasks,
+  apiKey,
+  onOpenSettings
 }) => {
   const [newTaskText, setNewTaskText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -32,15 +36,19 @@ export const TaskList: React.FC<TaskListProps> = ({
   };
 
   const handleGenerate = async () => {
-    if (!process.env.API_KEY) {
-      alert("Please configure the API_KEY in your environment to use AI features.");
+    if (!apiKey) {
+      onOpenSettings();
       return;
     }
     setIsGenerating(true);
     const dateContext = format(selectedDate, 'EEEE, MMMM do');
-    const suggestions = await generateTaskSuggestions(dateContext);
-    if (suggestions.length > 0) {
-      onAddMultipleTasks(suggestions);
+    try {
+        const suggestions = await generateTaskSuggestions(dateContext, apiKey);
+        if (suggestions.length > 0) {
+            onAddMultipleTasks(suggestions);
+        }
+    } catch (e) {
+        alert("Failed to generate tasks. Please check your API Key.");
     }
     setIsGenerating(false);
   };
@@ -106,19 +114,32 @@ export const TaskList: React.FC<TaskListProps> = ({
         <button
           onClick={handleGenerate}
           disabled={isGenerating}
-          className="w-full py-2 px-4 bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 text-indigo-700 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-all border border-indigo-100/50"
+          className={`
+            w-full py-2 px-4 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-all border
+            ${!apiKey 
+                ? 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100' 
+                : 'bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 text-indigo-700 border-indigo-100/50'
+            }
+          `}
         >
           {isGenerating ? (
             <Loader2 size={16} className="animate-spin" />
+          ) : !apiKey ? (
+            <Lock size={16} />
           ) : (
             <Sparkles size={16} />
           )}
-          {isGenerating ? 'Magic happening...' : 'Suggest tasks for today'}
+          
+          {isGenerating 
+            ? '생각 중...' 
+            : !apiKey 
+                ? 'API Key 설정 필요' 
+                : '오늘 할 일 추천받기 (AI)'}
         </button>
       </div>
 
       {/* Task List */}
-      <div className="flex-1 overflow-y-auto -mx-2 px-2 space-y-3">
+      <div className="flex-1 overflow-y-auto -mx-2 px-2 space-y-3 custom-scrollbar">
         {sortedTasks.length === 0 ? (
           <div className="h-48 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-100 rounded-2xl">
             <span className="text-sm">No tasks for this day</span>

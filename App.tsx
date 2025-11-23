@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
+import { Settings } from 'lucide-react';
 import { Calendar } from './components/Calendar';
 import { TaskList } from './components/TaskList';
+import { ApiKeyManager } from './components/ApiKeyManager';
 import { Task, TaskMap } from './types';
 
 const STORAGE_KEY = 'smart_calendar_todo_v1';
@@ -11,6 +13,10 @@ const App: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [tasks, setTasks] = useState<TaskMap>({});
+  
+  // API Key State
+  const [apiKey, setApiKey] = useState('');
+  const [isKeyManagerOpen, setIsKeyManagerOpen] = useState(false);
 
   // Load from LocalStorage on mount
   useEffect(() => {
@@ -75,7 +81,23 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4 md:p-8 lg:p-12 flex items-center justify-center">
+    <div className="min-h-screen bg-slate-100 p-4 md:p-8 lg:p-12 flex items-center justify-center relative">
+      {/* Settings Button */}
+      <button 
+        onClick={() => setIsKeyManagerOpen(true)}
+        className="absolute top-4 right-4 md:top-8 md:right-8 bg-white p-3 rounded-full shadow-md text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all z-10"
+        title="API Key Settings"
+      >
+        <Settings size={24} />
+      </button>
+
+      <ApiKeyManager 
+        isOpen={isKeyManagerOpen} 
+        onClose={() => setIsKeyManagerOpen(false)}
+        onSetApiKey={setApiKey}
+        currentApiKey={apiKey}
+      />
+
       <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6 h-[850px] lg:h-[700px]">
         
         {/* Left Column: Calendar */}
@@ -98,6 +120,8 @@ const App: React.FC = () => {
             onToggleTask={handleToggleTask}
             onDeleteTask={handleDeleteTask}
             onAddMultipleTasks={handleAddMultipleTasks}
+            apiKey={apiKey}
+            onOpenSettings={() => setIsKeyManagerOpen(true)}
           />
         </div>
 

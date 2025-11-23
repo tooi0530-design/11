@@ -2,17 +2,32 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Task } from "../types";
 import { v4 as uuidv4 } from 'uuid';
 
-const getClient = () => {
-    const apiKey = process.env.API_KEY;
+const getClient = (apiKey: string) => {
     if (!apiKey) return null;
     return new GoogleGenAI({ apiKey });
 };
 
-export const generateTaskSuggestions = async (dateContext: string): Promise<Task[]> => {
-  const ai = getClient();
+export const testConnection = async (apiKey: string): Promise<boolean> => {
+  const ai = getClient(apiKey);
+  if (!ai) return false;
+
+  try {
+    // Simple fast query to check if key is valid
+    await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: 'Test',
+    });
+    return true;
+  } catch (error) {
+    console.error("Connection test failed:", error);
+    return false;
+  }
+};
+
+export const generateTaskSuggestions = async (dateContext: string, apiKey: string): Promise<Task[]> => {
+  const ai = getClient(apiKey);
   if (!ai) {
-    console.warn("API Key not found, returning mock data or empty.");
-    return [];
+    throw new Error("API Key is missing");
   }
 
   try {
